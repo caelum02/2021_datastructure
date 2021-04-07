@@ -1,7 +1,9 @@
 import java.io.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class CalculatorTest {
-	public static void main(String args[]) {
+	public void main(String args[]) {
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
 
 		while (true) {
@@ -17,12 +19,56 @@ public class CalculatorTest {
 		}
 	}
 
+	public void command(String input) {
+		String processedInput = preprocessInput(input);
+		Element[] inputElements = parseElements(processedInput);
+		for(Element element : inputElements) System.out.println(element);
+	}
+
 	private static String preprocessInput(String input) {
 		return input.replaceAll("[ \t]+", "");
 	}
 
-	private static void command(String input) {
-		
+	private Element[] parseElements(String input) {
+		/*
+			@param
+			(String) input : preprocessed input String
+
+			@return
+			returns array of Elements
+		 */
+
+		int length=0;
+		Element[] elements;
+
+		StringBuilder patternString = new StringBuilder();
+		for (OperatorType operator : OperatorType.values()) {
+			patternString.append("(").append(operator.patternString).append(")");
+		}
+
+		Pattern pattern = Pattern.compile(patternString.toString());
+		Matcher matcher = pattern.matcher(input);
+
+		length = (int) matcher.results().count();
+		elements = new Element[length];
+
+		matcher = pattern.matcher(input);
+
+		int idx=0;
+		while(matcher.find()){
+			if(!matcher.group(0).isEmpty()) {
+				elements[idx++] = new Constant(matcher.group(0));
+				continue;
+			}
+			for(OperatorType operator : OperatorType.values()) {
+				if(!matcher.group(operator.idx).isEmpty()) {
+					elements[idx++] = new Operator(operator);
+					break;
+				}
+			}
+		}
+
+		return elements;
 	}
 
 	private class Expression {
@@ -31,53 +77,142 @@ public class CalculatorTest {
 
 		Expression(Element[] elem) {
 			int operatorIdx = findOperator(elem);
-
 			operator = (Operator) elem[operatorIdx];
 
 		}
 
 		private long evaluate() {
-			result = operator.operate();
+			return operator.evaluate();
 		}
 
 		private int findOperator(Element[] expr) {
-			int idx;
+//			int idx=0;
+//
+//			// 우선 순위가 가장 낮은 연산자를 찾는다.
+//			for (idx = 0; idx < expr.length; idx++) {
+//				if (!(expr[idx] instanceof Operator))
+//			}
+//
+//			return idx;
+			return 0;
+		}
 
-			// 우선 순위가 가장 낮은 연산자를 찾는다.
-			for (idx = 0; idx < expr.length; idx++) {
-				if (!(expr[idx] instanceof Operator))
-			}
-
-			return idx;
+		public long getResult() {
+			return result;
 		}
 	}
 
 	private abstract class Element {
-
+		abstract public long evaluate();
+		abstract public String toString();
 	}
 
-	private class Operator extends Element{
+	public class Operator extends Element {
 		Expression[] operands;
 		OperatorType operatorType;
 
-		public long operate() {
+		Operator(OperatorType operatorType) {
+			this.operatorType = operatorType;
+		}
 
+		public void setOperands(Expression[] operands) {
+			this.operands = operands;
+		}
+
+		@Override
+		public long evaluate() {
+			long[] operandResults = new long[operands.length];
+
+			for(int i=0; i<operands.length; i++) {
+				operandResults[i] = operands[i].getResult();
+			}
+
+			return operatorType.calculate(operandResults);
+		}
+
+		@Override
+		public String toString() {
+			return operatorType.printString;
+		}
+	}
+
+	private class Constant extends Element {
+		long value;
+
+		Constant(String string) {
+			value = Long.parseLong(string);
+		}
+
+		@Override
+		public long evaluate() {
+			return value;
+		}
+
+		@Override
+		public String toString() {
+			return null;
 		}
 	}
 
 	private enum OperatorType {
-		Bracket {
-			long calculate(long operand) {return operand;}
+		Bracket ("()", "",1) {
+			@Override
+			public long calculate(long[] operands) {return operands[0];}
 		},
-		Pow {
-			long calculate(long operand1, long operand2) {
-				return (long) Math.pow(operand1, operand2);
+		Pow ("^", 2){
+			@Override
+			public long calculate(long[] operands) {
+				return (long) Math.pow(operands[0], operands[1]);
 			}
 		},
-		Minus {
-			long calculate(long operand) {return -operand;}
+		Minus ("(?![)0-9])-", "~",3){
+			@Override
+			public long calculate(long[] operands) {return -operands[0];}
 		},
+		Mult ("*", 4){
+			@Override
+			public long calculate(long[] operands) {
+				return operands[0] * operands[1];
+			}
+		},
+		Div ("/", 5){
+			@Override
+			public long calculate(long[] operands) {
+				return operands[0] / operands[1];
+			}
+		},
+		Mod ("%", 6){
+			@Override
+			public long calculate(long[] operands) {
+				return operands[0] % operands[1];
+			}
+		},
+		Add ("+", 7){
+			@Override
+			public long calculate(long[] operands) {
+				return operands[0] + operands[1];
+			}
+		},
+		Sub ("(?=[)0-9])-", "-",8){
+			@Override
+			public long calculate(long[] operands) {
+				return operands[0] - operands[1];
+			}
+		};
 
+		private OperatorType(String regex, String print, int idx) {
+			patternString = regex;
+			printString = print;
+			this.idx = idx;
+		}
+
+		private OperatorType(String regex, int idx) {
+			this(regex, regex, idx);
+		}
+
+		public abstract long calculate(long[] operands);
+		public String patternString, printString;
+		public int idx;
 	}
 
 }
