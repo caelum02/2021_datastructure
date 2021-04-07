@@ -22,7 +22,7 @@ public class CalculatorTest {
 	}
 
 	private static void command(String input) {
-		
+
 	}
 
 	private class Expression {
