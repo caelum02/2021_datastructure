@@ -47,7 +47,7 @@ public class MyLinkedList<T> implements ListInterface<T> {
 	public T first() {
 		return head.getNext().getItem();
 	}
-
+	// 수업 pdf 참고
 	@Override
 	public void add(T item) {
 		Node<T> last = head;
@@ -95,6 +95,7 @@ class MyLinkedListIterator<T> implements Iterator<T> {
 	}
 
 	@Override
+	// 수업 pdf 참고
 	public void remove() {
 		if (prev == null)
 			throw new IllegalStateException("next() should be called first");
