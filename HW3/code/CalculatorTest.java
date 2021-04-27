@@ -1,4 +1,5 @@
 import java.io.*;
+import java.util.Stack;
 
 public class CalculatorTest {
 	public static void main(String args[]) {
@@ -17,16 +18,68 @@ public class CalculatorTest {
 		}
 	}
 
+
 	public static void command(String input) {
 		try {
-			input = preprocess(input);
-			System.out.println(input);
+			String infix = preprocess(input);
+			System.out.println(infix);
+			Stack<Object> postfix = toPostfix(infix);
 
 		} catch (Exception e) {
 			System.out.println("ERROR");
 		}
 	}
-	
+
+	public static Stack<Object> toPostfix(String infix) throws Exception {
+		int numParenthesis = 0, len = infix.length();
+		boolean isOpen = false, wasNum = false;
+		Stack<Object> Postfix = new Stack<>(); Stack<Character> operatorStack = new Stack<>();
+		StringBuilder numberBuilder = new StringBuilder();
+
+		for(int i=0; i<len; i++) {
+			char c = infix.charAt(i);
+			if (isDigit(c)) {
+				if(!wasNum) {
+					numberBuilder = new StringBuilder();
+					wasNum = true;
+				}
+
+				numberBuilder.append(c);
+
+			} else {
+				if(wasNum) {
+					wasNum = false;
+
+					Postfix.push(
+							Integer.parseInt(numberBuilder.toString())
+					);
+					Postfix.push(operatorStack.pop());
+				}
+
+				if (c == '(') {
+					numParenthesis++;
+					isOpen = true;
+				} else if (c == ')') {
+					numParenthesis--;
+					if (numParenthesis < 0)
+						throw new Exception("Invalid Parentheses");
+					isOpen = false;
+
+					Postfix.push(operatorStack.pop());
+				} else if (isOperator(c)) {
+					if(isOpen) operatorStack.push(c);
+
+				}
+			}
+		}
+
+		if (numParenthesis != 0)
+			throw new Exception("Invalid Parentheses");
+
+		return Postfix;
+	}
+
+
 	private static String preprocess(String s) throws Exception{
 		StringBuilder stringBuilder = new StringBuilder(s);
 
@@ -35,15 +88,21 @@ public class CalculatorTest {
 			throw new Exception("Found invalid character in input");
 
 		replaceUnaryMinus(stringBuilder);
+		Parenthesize(stringBuilder);
 
 		return stringBuilder.toString();
+	}
+
+	private static void Parenthesize(StringBuilder stringBuilder) {
+		stringBuilder.insert(0, '(');
+		stringBuilder.append(')');
 	}
 
 	// 입력에 적절하지 않은 문자가 존재할 경우 true 리턴
 	private static boolean invalidChar(StringBuilder s){
 		for(int i=0; i < s.length(); i++) {
 			char c = s.charAt(i);
-			if(!(isOperand(c) || (isOperator(c) && c != '~')))
+			if(!(isDigit(c) || (isOperator(c) && c != '~') || c == '(' || c==')'))
 				return true;
 		}
 
@@ -54,7 +113,7 @@ public class CalculatorTest {
 		char prev = '(';
 		for(int i=0; i < s.length(); i++) {
 			char curr = s.charAt(i);
-			if (curr == '-' && isOperator(prev)) {
+			if (curr == '-' && (isOperator(prev) || prev == '(')) {
 				s.setCharAt(i, '~');
 			}
 			prev = curr;
@@ -62,11 +121,11 @@ public class CalculatorTest {
 	}
 
 	private static boolean isOperator(char c) {
-		return c == '(' || c == '+' || c == '-' || c == '^' || c == '/' || c == '%' || c == '*' || c == '~';
+		return c == '+' || c == '-' || c == '^' || c == '/' || c == '%' || c == '*' || c == '~';
 	}
 
-	private static boolean isOperand(char c) {
-		return c == '0' || c == '1' || c == '2' || c == '3' || c == '4' || c == '5' || c == '6' || c == '7' || c == '8' || c == '9' || c == ')';
+	private static boolean isDigit(char c) {
+		return c == '0' || c == '1' || c == '2' || c == '3' || c == '4' || c == '5' || c == '6' || c == '7' || c == '8' || c == '9';
 	}
 
 	private static void removeBlank(StringBuilder s) {
@@ -74,10 +133,6 @@ public class CalculatorTest {
 			if (s.charAt(i) == '\t' || s.charAt(i) == ' ')
 				s.deleteCharAt(i--);
 		}
-	}
-
-	private static boolean isUnary(char c) {
-		return c == '~';
 	}
 
 //	private static String
