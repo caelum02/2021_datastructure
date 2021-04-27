@@ -1,8 +1,4 @@
 import java.io.*;
-import java.security.InvalidParameterException;
-import java.util.Iterator;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 public class CalculatorTest {
 	public static void main(String args[]) {
@@ -22,227 +18,131 @@ public class CalculatorTest {
 	}
 
 	public static void command(String input) {
-		input = preprocessInput(input);
-		Element[] inputElements = Element.parseElements(input);
-		System.out.println("[Parsed Result]");
-		for (Element element : inputElements) System.out.println(element);
+		try {
+			input = preprocess(input);
+			System.out.println(input);
+
+		} catch (Exception e) {
+			System.out.println("ERROR");
+		}
+	}
+	
+	private static String preprocess(String s) throws Exception{
+		StringBuilder stringBuilder = new StringBuilder(s);
+
+		removeBlank(stringBuilder);
+		if(invalidChar(stringBuilder))
+			throw new Exception("Found invalid character in input");
+
+		replaceUnaryMinus(stringBuilder);
+
+		return stringBuilder.toString();
 	}
 
-	// 공백 제거 및 input 형식 체크
-	public static String preprocessInput(String input) {
-		// 모든 whitespace 혹은 tab (\t)를 제거
-		input = input.replaceAll("[ \t]+", "");
+	// 입력에 적절하지 않은 문자가 존재할 경우 true 리턴
+	private static boolean invalidChar(StringBuilder s){
+		for(int i=0; i < s.length(); i++) {
+			char c = s.charAt(i);
+			if(!(isOperand(c) || (isOperator(c) && c != '~')))
+				return true;
+		}
 
-		Element.formatCheck(input);
-
-		return input;
-	}
-}
-
-class Expression {
-	Operator operator;
-	long result;
-
-	Expression(Element[] elem) {
-		int operatorIdx = findOperator(elem);
-		operator = (Operator) elem[operatorIdx];
+		return false;
 	}
 
-	// TODO
-	private long evaluate() {
-		if(operator != null)
-			return operator.evaluate();
-
-
+	private static void replaceUnaryMinus(StringBuilder s) {
+		char prev = '(';
+		for(int i=0; i < s.length(); i++) {
+			char curr = s.charAt(i);
+			if (curr == '-' && isOperator(prev)) {
+				s.setCharAt(i, '~');
+			}
+			prev = curr;
+		}
 	}
 
-	private int findOperator(Element[] expr) {
-		// TODO
-//			int idx=0;
+	private static boolean isOperator(char c) {
+		return c == '(' || c == '+' || c == '-' || c == '^' || c == '/' || c == '%' || c == '*' || c == '~';
+	}
+
+	private static boolean isOperand(char c) {
+		return c == '0' || c == '1' || c == '2' || c == '3' || c == '4' || c == '5' || c == '6' || c == '7' || c == '8' || c == '9' || c == ')';
+	}
+
+	private static void removeBlank(StringBuilder s) {
+		for(int i=0; i < s.length(); i++) {
+			if (s.charAt(i) == '\t' || s.charAt(i) == ' ')
+				s.deleteCharAt(i--);
+		}
+	}
+
+	private static boolean isUnary(char c) {
+		return c == '~';
+	}
+
+//	private static String
 //
-//			// 우선 순위가 가장 낮은 연산자를 찾는다.
-//			for (idx = 0; idx < expr.length; idx++) {
-//				if (!(expr[idx] instanceof Operator))
-//			}
+//	private static int oprPriority(char o1, char o2) {
+//		if(o1 == o2) {
 //
-//			return idx;
-		return 0;
-	}
-
-	public long getResult() {
-		return result;
-	}
+//		}
+//	}
 }
 
-abstract class Element {
-	static Pattern ELEM_PATTERN = Pattern.compile("([0-9]+)(\\(.*\\))(\\^)((?![)0-9])-)(\\*)(/)(%)(\\+)((?=[)0-9])-)");
-
-	abstract public long evaluate();
-	abstract public String toString();
-
-	public static Element[] parseElements(String input) {
-		/*
-			@param
-			(String) input : preprocessed input String
-
-			@return
-			returns array of Elements
-		 */
-
-		formatCheck(input);
-
-		int length;
-		Element[] elements;
-
-		Matcher matcher = ELEM_PATTERN.matcher(input);
-
-		length = (int) matcher.results().count();
-		assert length != 0;
-		elements = new Element[length];
-
-		matcher = ELEM_PATTERN.matcher(input);
-
-		int idx=0;
-		while(matcher.find()){
-			if(!matcher.group(0).isEmpty()) {
-				elements[idx++] = new Constant(matcher.group(0));
-				continue;
-			}
-
-			if(!matcher.group(1).isEmpty()) {
-				elements[idx++] = new Parenthesis(matcher.group(1));
-				continue;
-			}
-
-			OperatorType[] operatorTypes = OperatorType.values();
-
-			for(int i=1; i < operatorTypes.length; i++) {
-				OperatorType operator = operatorTypes[i];
-
-				if(!matcher.group(operator.idx).isEmpty()) {
-					elements[idx++] = new Operator(operator);
-					break;
-				}
-			}
-		}
-
-		return elements;
-	}
-
-	public static void formatCheck(String input) throws IllegalArgumentException {
-
-		/*
-			괄호의 내부는 Parenthesis 선언할 시 형식 체크함
-		 */
-		Matcher formatMatch = Pattern.compile("^$").matcher(input);
-		if(!formatMatch.find())
-			throw new InvalidParameterException();
-	}
-}
-
-class Operator extends Element {
-	Expression[] operands;
-	OperatorType operatorType;
-
-	Operator(OperatorType operatorType) {
-		this.operatorType = operatorType;
-	}
-
-	@Override
-	public long evaluate() {
-		long[] operandResults = new long[operands.length];
-
-		for(int i=0; i<operands.length; i++) {
-			operandResults[i] = operands[i].getResult();
-		}
-
-		return operatorType.calculate(operandResults);
-	}
-
-	@Override
-	public String toString() {
-		return operatorType.printString;
-	}
-}
-
-class Parenthesis extends Operator{
-	Expression expr;
-	Parenthesis (String string) {
-		super(OperatorType.ParenthesisType);
-		operands[0] = new Expression(Element.parseElements(string));
-	}
-}
-
-class Constant extends Element {
-	long value;
-
-	Constant(String string) {
-		value = Long.parseLong(string);
-	}
-
-	@Override
-	public long evaluate() {
-		return value;
-	}
-
-	@Override
-	public String toString() {
-		return null;
-	}
-}
-
-enum OperatorType {
-	ParenthesisType ("",1) {
-		@Override
-		public long calculate(long[] operands) {return operands[0];}
-	},
-	PowType ("^", 2){
-		@Override
-		public long calculate(long[] operands) {
-			return (long) Math.pow(operands[0], operands[1]);
-		}
-	},
-	MinusType ("~",3){
-		@Override
-		public long calculate(long[] operands) {return -operands[0];}
-	},
-	MultType ("\\*", 4){
-		@Override
-		public long calculate(long[] operands) {
-			return operands[0] * operands[1];
-		}
-	},
-	DivType ("/", 5){`
-		@Override
-		public long calculate(long[] operands) {
-			return operands[0] / operands[1];
-		}
-	},
-	ModType ("%", 6){
-		@Override
-		public long calculate(long[] operands) {
-			return operands[0] % operands[1];
-		}
-	},
-	Add ("\\+", 7){
-		@Override
-		public long calculate(long[] operands) {
-			return operands[0] + operands[1];
-		}
-	},
-	SubType ("-",8){
-		@Override
-		public long calculate(long[] operands) {
-			return operands[0] - operands[1];
-		}
-	};
-
-	private OperatorType(String print, int idx) {
-		printString = print;
-		this.idx = idx;
-	}
-
-	public abstract long calculate(long[] operands);
-	public String patternString, printString;
-	public int idx;
-}
+//	static Pattern ELEM_PATTERN = Pattern.compile("([0-9]+)(\\(.*\\))(\\^)((?![)0-9])-)(\\*)(/)(%)(\\+)((?=[)0-9])-)");
+//
+//enum OperatorType {
+//	ParenthesisType ("",1) {
+//		@Override
+//		public long calculate(long[] operands) {return operands[0];}
+//	},
+//	PowType ("^", 2){
+//		@Override
+//		public long calculate(long[] operands) {
+//			return (long) Math.pow(operands[0], operands[1]);
+//		}
+//	},
+//	MinusType ("~",3){
+//		@Override
+//		public long calculate(long[] operands) {return -operands[0];}
+//	},
+//	MultType ("\\*", 4){
+//		@Override
+//		public long calculate(long[] operands) {
+//			return operands[0] * operands[1];
+//		}
+//	},
+//	DivType ("/", 5){`
+//		@Override
+//		public long calculate(long[] operands) {
+//			return operands[0] / operands[1];
+//		}
+//	},
+//	ModType ("%", 6){
+//		@Override
+//		public long calculate(long[] operands) {
+//			return operands[0] % operands[1];
+//		}
+//	},
+//	Add ("\\+", 7){
+//		@Override
+//		public long calculate(long[] operands) {
+//			return operands[0] + operands[1];
+//		}
+//	},
+//	SubType ("-",8){
+//		@Override
+//		public long calculate(long[] operands) {
+//			return operands[0] - operands[1];
+//		}
+//	};
+//
+//	private OperatorType(String print, int idx) {
+//		printString = print;
+//		this.idx = idx;
+//	}
+//
+//	public abstract long calculate(long[] operands);
+//	public String patternString, printString;
+//	public int idx;
+//}
