@@ -18,67 +18,152 @@ public class CalculatorTest {
 		}
 	}
 
-
 	public static void command(String input) {
 		try {
 			String infix = preprocess(input);
 			System.out.println(infix);
 			Stack<Object> postfix = toPostfix(infix);
 
+			StringBuilder postfixBuilder = new StringBuilder();
+
+			for(Object o : postfix) {
+				postfixBuilder.append(o.toString());
+				postfixBuilder.append(' ');
+			}
+
+			System.out.println(calculate(postfix));
+			System.out.println(postfixBuilder.toString());
+
 		} catch (Exception e) {
 			System.out.println("ERROR");
+//			System.err.println(e);
+			e.printStackTrace();
 		}
 	}
 
-	public static Stack<Object> toPostfix(String infix) throws Exception {
-		int numParenthesis = 0, len = infix.length();
-		boolean isOpen = false, wasNum = false;
-		Stack<Object> Postfix = new Stack<>(); Stack<Character> operatorStack = new Stack<>();
-		StringBuilder numberBuilder = new StringBuilder();
+	public static int calculate(Stack<Object> postfix) throws Exception{
+		int result = 0;
+		boolean wasInt = false;
+		Stack<Object> calStack = new Stack<>();
 
-		for(int i=0; i<len; i++) {
-			char c = infix.charAt(i);
-			if (isDigit(c)) {
-				if(!wasNum) {
-					numberBuilder = new StringBuilder();
-					wasNum = true;
-				}
-
-				numberBuilder.append(c);
-
-			} else {
-				if(wasNum) {
-					wasNum = false;
-
-					Postfix.push(
-							Integer.parseInt(numberBuilder.toString())
-					);
-					Postfix.push(operatorStack.pop());
-				}
-
-				if (c == '(') {
-					numParenthesis++;
-					isOpen = true;
-				} else if (c == ')') {
-					numParenthesis--;
-					if (numParenthesis < 0)
-						throw new Exception("Invalid Parentheses");
-					isOpen = false;
-
-					Postfix.push(operatorStack.pop());
-				} else if (isOperator(c)) {
-					if(isOpen) operatorStack.push(c);
+		while (!postfix.isEmpty()) {
+			Object o = postfix.pop();
+			if (o instanceof Character) {
+				char c = (Character) o; operators.push(c);
+				wasInt = false;
+			} else if (o instanceof Integer) {
+				int operand = (Integer) o;
+				if (!wasInt) wasInt = true;
+				else {
 
 				}
 			}
 		}
 
-		if (numParenthesis != 0)
-			throw new Exception("Invalid Parentheses");
+		return result;
 
-		return Postfix;
 	}
 
+	public static Stack<Object> toPostfix(String infix) throws Exception {
+		int depthParenthesis = 0, len = infix.length();
+		boolean wasDigit = false;
+		Stack<Object> postfix = new Stack<>();
+		Stack<Integer> postParDepth = new Stack<>();
+
+		Stack<Character> operatorStack = new Stack<>();
+		Stack<Integer> opParDepth = new Stack<>();
+
+		StringBuilder numberBuilder = new StringBuilder();
+
+		for(int i=0; i<len; i++) {
+			char c = infix.charAt(i);
+			if (isDigit(c)) {
+				if (!wasDigit) {
+					wasDigit = true;
+					numberBuilder = new StringBuilder();
+				}
+
+				numberBuilder.append(c);
+			} else {
+				if (wasDigit) {
+					wasDigit = false;
+
+					Integer operand = Integer.parseInt(numberBuilder.toString());
+					postfix.push(operand);
+
+					while(!operatorStack.isEmpty()) {
+						postfix.push(operatorStack.pop());
+						postParDepth.push(opParDepth.pop());
+					}
+				}
+
+				if (c == '(') {
+					depthParenthesis++;
+				}
+
+				else if (c == ')') {
+					depthParenthesis--;
+					if (depthParenthesis < 0)
+						throw new Exception("Invalid Parentheses");
+
+					while(!operatorStack.isEmpty()) {
+						postfix.push(operatorStack.pop());
+						postParDepth.push(opParDepth.pop());
+					}
+				}
+
+				else if (isOperator(c)) {
+					Integer depth = postParDepth.empty() ? -1 : postParDepth.peek();
+					while(!postfix.empty() && postfix.peek() instanceof Character && postParDepth.peek() <= depth) {
+						Character prevOp = (Character) postfix.pop();
+						depth = postParDepth.pop();
+
+						if (depth < depthParenthesis || (depth == depthParenthesis && compareOp(prevOp, c))) {
+							operatorStack.push(prevOp);
+							opParDepth.push(depth);
+						} else {
+							postfix.push(prevOp);
+							postParDepth.push(depth);
+							break;
+						}
+					}
+					operatorStack.push(c);
+					opParDepth.push(depthParenthesis);
+				}
+			}
+
+//			System.out.printf("%c, depth : %d\n", c, depthParenthesis);
+//			System.out.println("postfix" + postfix);
+//			System.out.println("postfixDepth" + postParDepth);
+//			System.out.println("operatorStack" + operatorStack);
+//			System.out.println("operatorDepth" + opParDepth);
+		}
+
+		if (depthParenthesis != 0)
+			throw new Exception("Invalid Parentheses");
+
+		return postfix;
+	}
+
+	// compare priority of operators
+	// true if c1 < c2
+	private static boolean compareOp(char c1, char c2) {
+		int p1 = priority(c1), p2 = priority(c2);
+		if (p1 < p2) return true;
+		else if (p1 == p2) {
+			return c1 == '^';
+		}
+		else return false;
+	}
+
+	// return priority of operators
+	private static int priority(char c) {
+		if (c=='+' || c=='-') return 0;
+		else if (c=='*' || c=='/' || c=='%') return 1;
+		else if (c=='~') return 2;
+		else if (c=='^') return 3;
+		else return -1;
+	}
 
 	private static String preprocess(String s) throws Exception{
 		StringBuilder stringBuilder = new StringBuilder(s);
@@ -88,12 +173,12 @@ public class CalculatorTest {
 			throw new Exception("Found invalid character in input");
 
 		replaceUnaryMinus(stringBuilder);
-		Parenthesize(stringBuilder);
+		parenthesize(stringBuilder);
 
 		return stringBuilder.toString();
 	}
 
-	private static void Parenthesize(StringBuilder stringBuilder) {
+	private static void parenthesize(StringBuilder stringBuilder) {
 		stringBuilder.insert(0, '(');
 		stringBuilder.append(')');
 	}
