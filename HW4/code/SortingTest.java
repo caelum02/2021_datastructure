@@ -197,7 +197,8 @@ public class SortingTest
 		while(p1 < m && p2 < r) {
 			if (B[p1] < B[p2])
 				A[p0++] = B[p1++];
-			else A[p0++] = B[p2++];
+			else
+				A[p0++] = B[p2++];
 		}
 		while(p1 < m)
 			A[p0++] = B[p1++];
@@ -210,7 +211,6 @@ public class SortingTest
 	{
 		// TODO : Quick Sort 를 구현하라.
 		quickSort(value, 0, value.length);
-
 		return (value);
 	}
 
