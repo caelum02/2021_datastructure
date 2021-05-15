@@ -1,5 +1,6 @@
 import java.io.*;
 import java.util.*;
+import java.util.regex.Pattern;
 
 public class SortingTest
 {
@@ -182,14 +183,55 @@ public class SortingTest
 	private static int[] DoMergeSort(int[] value)
 	{
 		// TODO : Merge Sort 를 구현하라.
+		int[] value_ = value.clone();
+		mergeSort(value, value_, 0, value.length);
+		for (int i=0; i<value.length; i++)
+			System.out.println(value[i]);
+
 		return (value);
+	}
+
+	private static void mergeSort(int[] A, int[] B, int l, int r) {
+		if (r-l <= 1) return;
+		int m = (l+r) / 2;
+
+		mergeSort(B, A, l, m);
+		mergeSort(B, A, m, r);
+
+		int p1=l, p2=m, p0=l;
+		while(p1 < m && p2 < r) {
+			if (B[p1] < B[p2])
+				A[p0++] = B[p1++];
+			else A[p0++] = B[p2++];
+		}
+		while(p1 < m)
+			A[p0++] = B[p1++];
+		while(p2 < r)
+			A[p0++] = B[p2++];
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
 	private static int[] DoQuickSort(int[] value)
 	{
 		// TODO : Quick Sort 를 구현하라.
+		quickSort(value, 0, value.length);
+//		for (int j=0; j<value.length; j++)
+//			System.out.println(value[j]);
 		return (value);
+	}
+
+	private static void quickSort(int[] value, int l, int r) {
+		if (r-l <= 1) return;
+
+		int p = r-1, x = value[p];
+		int i=l;
+		for (int j=l; j<r-1; j++) {
+			if(value[j] < x)
+				swap(value, i++, j);
+		}
+		swap(value, i, p);
+		quickSort(value, l, i);
+		quickSort(value, i+1, r);
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
