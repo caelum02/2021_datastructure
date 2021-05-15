@@ -135,8 +135,7 @@ public class SortingTest
 			while (j >= 0 && value[j] > curr) j--;
 			insert(value, j+1, i, curr);
 		}
-		for (int i=0; i<length; i++)
-			System.out.println(value[i]);
+
 		return (value);
 	}
 
@@ -174,9 +173,8 @@ public class SortingTest
 				} else break;
 			}
 		}
-		for (int i=0; i<value.length; i++)
-			System.out.println(value[i]);
-		return (value);
+
+		return value;
 	}
 
 	////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -185,9 +183,6 @@ public class SortingTest
 		// TODO : Merge Sort 를 구현하라.
 		int[] value_ = value.clone();
 		mergeSort(value, value_, 0, value.length);
-		for (int i=0; i<value.length; i++)
-			System.out.println(value[i]);
-
 		return (value);
 	}
 
@@ -215,8 +210,7 @@ public class SortingTest
 	{
 		// TODO : Quick Sort 를 구현하라.
 		quickSort(value, 0, value.length);
-//		for (int j=0; j<value.length; j++)
-//			System.out.println(value[j]);
+
 		return (value);
 	}
 
@@ -238,6 +232,29 @@ public class SortingTest
 	private static int[] DoRadixSort(int[] value)
 	{
 		// TODO : Radix Sort 를 구현하라.
+		int n = value.length;
+
+		int pow = 1;
+		while (true) {
+			int[][] byDigit = new int[19][n];
+			int[] p = new int[19];
+
+			for (int j : value) {
+				int digit = (j / pow) % 10 + 9;
+				byDigit[digit][p[digit]++] = j;
+			}
+
+			if (p[9] == n) break;
+
+			int idx = 0;
+			for (int digit=0; digit<19; digit++) {
+				System.arraycopy(byDigit[digit], 0, value, idx, p[digit]);
+				idx += p[digit];
+			}
+
+			pow *= 10;
+		}
+
 		return (value);
 	}
 }
