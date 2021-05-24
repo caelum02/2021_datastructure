@@ -1,12 +1,13 @@
-public class Node<E> {
-    public E item;
+public abstract class Node<V> {
+    public V value;
 
-    Node (E item) {
-        this.item = item;
+    Node (V value) {
+        this.value = value;
     }
 
     Node () {
         this(null);
     }
 }
+
 
