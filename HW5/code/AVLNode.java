@@ -4,8 +4,10 @@ public class AVLNode<K extends Comparable<K>, V> extends Node<V> {
     public int height, delta;
 
     AVLNode (K key, V item, int height) {
-        this(key, item, null, null);
+        super(item);
+        this.key = key;
         this.height = height;
+        this.left = this.right = null;
     }
 
     AVLNode (K key, V item, AVLNode<K, V> left, AVLNode<K, V> right) {

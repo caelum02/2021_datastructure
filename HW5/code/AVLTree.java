@@ -1,18 +1,26 @@
-public class AVLTree<K extends Comparable<K>, V> {
+import java.util.ArrayList;
+import java.util.List;
+
+public class AVLTree<K extends Comparable<K>, V> implements Dictionary<K, V> {
     private final AVLNode<K, V> NIL = new AVLNode<>(null, null, 0);
     private AVLNode<K, V> root;
+    private List<K> savedOrder = new ArrayList<>();
 
     AVLTree() {
         root = NIL;
     }
 
+    @Override
     public V search(K key) {
         AVLNode<K, V> node = getNode(key);
         return node.value;
     }
 
+    @Override
     public void insert(K key, V value) {
         root = insert(root, key, value);
+        assert !needBalance(root);
+        savedOrder.add(key);
     }
 
     public AVLNode<K, V> insert(AVLNode<K, V> node, K key, V value) {
@@ -34,6 +42,24 @@ public class AVLTree<K extends Comparable<K>, V> {
             node = balanceSubtree(node);
 
         return node;
+    }
+
+    @Override
+    public String toString() {
+        if (root == NIL) return "EMPTY";
+        return getSubtreeString(root);
+    }
+
+    private String getSubtreeString(AVLNode<K, V> node) {
+        boolean leftNIL = node.left == NIL, rightNIL = node.right == NIL;
+        String str = node.key.toString();
+
+        if (!leftNIL)
+            str = str.concat(" " + getSubtreeString(node.left));
+        if (!rightNIL)
+            str = str.concat(" " + getSubtreeString(node.right));
+
+        return str;
     }
 
     private AVLNode<K, V> balanceSubtree(AVLNode<K, V> node) {
@@ -92,6 +118,21 @@ public class AVLTree<K extends Comparable<K>, V> {
         newRoot.setLeft(node);
 
         return newRoot;
+    }
+
+    public void validate() {
+        validateSubtree(root);
+    }
+
+    private void validateSubtree(AVLNode<K, V> node) {
+        if (node.left != NIL) {
+            assert node.left.key.compareTo(node.key) < 0;
+            validateSubtree(node.left);
+        }
+        if (node.right != NIL) {
+            assert node.right.key.compareTo(node.key) > 0;
+            validateSubtree(node.right);
+        }
     }
 }
 

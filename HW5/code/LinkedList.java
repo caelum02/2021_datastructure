@@ -1,6 +1,8 @@
-public class LinkedList<V> {
+import java.util.Iterator;
+
+public class LinkedList<V> implements Iterable<V> {
     public LinkedListNode<V> head, tail, NIL;
-    int size = 0;
+    public int size;
 
     LinkedList (V headValue) {
         NIL = new LinkedListNode<>(null, null);
@@ -51,5 +53,21 @@ public class LinkedList<V> {
         head.next = NIL;
         tail = head;
         size = 0;
+    }
+
+    @Override
+    public Iterator<V> iterator() {
+        return new LinkedListIterator<>(this);
+    }
+
+    @Override
+    public String toString() {
+        String str = "";
+        for (V s : this) {
+            str = str.concat(s.toString());
+            str += " ";
+        }
+
+        return str.substring(0, str.length()-1);
     }
 }
